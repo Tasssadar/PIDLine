@@ -40,7 +40,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 #LIBS = -lpololu_atmega328p 
 
 ## Objects that must be built in order to link
-OBJECTS = PIDLine.o 
+OBJECTS = PIDLine.o packet.o 
 
 ## Objects explicitly added by the user
 LINKONLYOBJECTS = 
@@ -50,6 +50,8 @@ all: $(TARGET) PIDLine.hex PIDLine.eep PIDLine.lss size
 
 ## Compile
 PIDLine.o: ../PIDLine.cpp
+	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
+packet.o: ../packet.cpp
 	$(CC) $(INCLUDES) $(CFLAGS) -c  $<
 
 ##Link
