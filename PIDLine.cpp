@@ -1,67 +1,48 @@
 #include "3piLibPack.h"
 #include "packet.h"
 
-void updateDisplay()
-{
-    display.printNumToXY(getBatteryVoltage(), 4, 0);
-}
+#if 0
+int16_t p_val = 20;
+int16_t i_val = 10000;
+int16_t d_val1 = 3;
+int16_t d_val2 = 2;
+int16_t max_spd = 60;
+#endif
 
-void dumpData(const int16_t& P, const int16_t& D, const int32_t& I, const uint16_t& last_P,
-              const int16_t& pwr_diff, const int16_t& l, const int16_t& r)
-{
-    Packet pkt(0);
-    pkt.write16(P);         // 0
-    pkt.write16(D);         // 2
-    pkt.write32(I);         // 4
-    pkt.write16(last_P);    // 8
-    pkt.write16(pwr_diff);  // 10
-    pkt.write16(r);         // 12
-    pkt.write16(l);         // 14
+#if 0
+int16_t p_val = 3;
+int16_t i_val = 20000;
+int16_t d_val1 = 50;
+int16_t d_val2 = 1;
+int16_t max_spd = 255;
+#endif
 
-    pkt.send();
-}
-
-void handlePkt(Packet& pkt);
-
-volatile int16_t p_val = 20;
-volatile int16_t i_val = 10000;
-volatile uint8_t d_val1 = 3;
-volatile uint8_t d_val2 = 2;
-volatile int16_t max_spd = 60;
+#if 1
+int16_t p_val = 3;
+int16_t i_val = 10000;
+int16_t d_val1 = 1000;
+int16_t d_val2 = 2;
+int16_t max_spd = 255;
+#endif
 
 bool stopped = true;
 bool calibrated = false;
+int16_t last_P = 0;
+int32_t I = 0;
+bool on_line = false;
+uint16_t on_line_counter = 0;
 
-
-void stopStart()
-{
-    if(stopped)
-    {
-        delay(500);
-        if(!calibrated)
-            cal_round();
-        calibrated = true;
-        stopped = false;
-    }
-    else
-    {
-        stopped = true;
-        setMotorPower(0, 0);
-    }
-}
+void handlePkt(Packet& pkt);
+void dumpData(const int16_t& P, const int16_t& D, const int32_t& I, const uint16_t& last_P,
+              const int16_t& pwr_diff, const int16_t& l, const int16_t& r);
+void stopStart();
 
 void run()
 {
     setSoftAccel(false);
-    updateDisplay();
-
+    display.printNumToXY(getBatteryVoltage(), 4, 0);
 
     char ch;
-    uint16_t last_P = 0;
-    int32_t I = 0;
-    int16_t r = 0;
-    int16_t l = 0;
-
     Packet pkt;
 
     while(true)
@@ -86,7 +67,24 @@ void run()
         }
         else
         {
-            uint16_t pos = getLinePos();
+            uint16_t pos = getLinePos(&on_line);
+
+            if(!on_line)
+            {
+                if(++on_line_counter >= 500)
+                {
+                    rs232.dumpNumber(last_P);
+                    rs232.dumpNumber(pos);
+                    rs232.dumpNumber(I);
+                    rs232.sendCharacter('\n');
+                    setMotorPower(0, 0);
+                    stopStart();
+                    continue;
+                }
+            }
+            else
+                on_line_counter = 0;
+
             int16_t P = ((int16_t)pos) - 2048;
             int16_t D = P - last_P;
             I += P;
@@ -99,59 +97,33 @@ void run()
                 pwr_diff = -max_spd;
 
             if(pwr_diff < 0)
-            {
-                l = max_spd+pwr_diff;
-                r = max_spd;
-            }
+                setMotorPower(max_spd+pwr_diff, max_spd);
             else
-            {
-                l = max_spd;
-                r = max_spd-pwr_diff;
-            }
-
-            dumpData(P, D, I, last_P, pwr_diff, l, r);
-            setMotorPower(l, r);
-
+                setMotorPower(max_spd, max_spd-pwr_diff);
+            //dumpData(P, D, I, last_P, pwr_diff, l, r);
             last_P = P;
         }
     }
-#if 0
-        // Get the position of the line.  Note that we *must* provide
-        // the "sensors" argument to read_line() here, even though we
-        // are not interested in the individual sensor readings.
-        unsigned int position = read_line(sensors,IR_EMITTERS_ON);
+}
 
-        // The "proportional" term should be 0 when we are on the line.
-        int proportional = ((int)position) - 2000;
-
-        // Compute the derivative (change) and integral (sum) of the
-        // position.
-        int derivative = proportional - last_proportional;
-        integral += proportional;
-
-        // Remember the last position.
-        last_proportional = proportional;
-
-        // Compute the difference between the two motor power settings,
-        // m1 - m2.  If this is a positive number the robot will turn
-        // to the right.  If it is a negative number, the robot will
-        // turn to the left, and the magnitude of the number determines
-        // the sharpness of the turn.
-        int power_difference = proportional/20 + integral/10000 + derivative*3/2;
-
-        // Compute the actual motor settings.  We never set either motor
-        // to a negative value.
-        const int max = 60;
-        if(power_difference > max)
-            power_difference = max;
-        if(power_difference < -max)
-            power_difference = -max;
-
-        if(power_difference < 0)
-            set_motors(max+power_difference, max);
-        else
-            set_motors(max, max-power_difference);
-#endif
+void stopStart()
+{
+    if(stopped)
+    {
+        delay(500);
+        if(!calibrated)
+            cal_round();
+        calibrated = true;
+        stopped = false;
+        last_P = 0;
+        I = 0;
+        on_line_counter = 0;
+    }
+    else
+    {
+        stopped = true;
+        setMotorPower(0, 0);
+    }
 }
 
 void handlePkt(Packet& pkt)
@@ -173,6 +145,21 @@ void handlePkt(Packet& pkt)
             break;
         }
     }
+}
+
+void dumpData(const int16_t& P, const int16_t& D, const int32_t& I, const uint16_t& last_P,
+              const int16_t& pwr_diff, const int16_t& l, const int16_t& r)
+{
+    Packet pkt(0);
+    pkt.write16(P);         // 0
+    pkt.write16(D);         // 2
+    pkt.write32(I);         // 4
+    pkt.write16(last_P);    // 8
+    pkt.write16(pwr_diff);  // 10
+    pkt.write16(r);         // 12
+    pkt.write16(l);         // 14
+
+    pkt.send();
 }
 
 void Packet::send()

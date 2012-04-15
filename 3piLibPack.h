@@ -263,7 +263,7 @@ public:
 
         m_running = m_started = true;
 
-        if(!m_time_on || !m_time_off)
+        if(!m_time_on)
             m_timer = -1;
         else
             m_timer = m_time_on;
@@ -295,7 +295,10 @@ public:
         {
             if(m_running)
             {
-                m_timer = m_time_off;
+                if(m_time_off == 0)
+                    m_timer = -1;
+                else
+                    m_timer = m_time_off;
                 TCCR1A &= ~(1 << COM1B0);
                 OCR1BH = 0;
                 OCR1BL = 0;
@@ -612,9 +615,12 @@ void cal_round()
 // black, set the optional second argument white_line to true.  In
 // this case, each sensor value will be replaced by (1000-value)
 // before the averaging.
-int16_t getLinePos(bool white_line = false)
+int16_t getLinePos(bool *on_line, bool white_line = false)
 {
-    bool on_line = false;
+    bool on_line_my;
+    bool *on_line_set = on_line ? on_line : &on_line_my;
+    *on_line_set = false;
+
     uint8_t i;
     uint32_t avg = 0; // this is for the weighted total, which is long
                       // before division
@@ -629,7 +635,7 @@ int16_t getLinePos(bool white_line = false)
 
         // keep track of whether we see the line at all
         if(value > 200)
-            on_line = 1;
+            *on_line_set = true;
 
         // only average in values that are above a noise threshold
         if(value > 50)
@@ -639,14 +645,14 @@ int16_t getLinePos(bool white_line = false)
         }
     }
 
-    if(!on_line)
+    if(!(*on_line_set))
     {
+        buzzer.set(200, 0);
         // If it last read to the left of center, return 0.
         if(last_value < (PI_GRND_SENSOR_COUNT-1)*1024/2)
             return 0;
         else // If it last read to the right of center, return the max.
             return (PI_GRND_SENSOR_COUNT-1)*1024;
-
     }
 
     last_value = avg/sum;
