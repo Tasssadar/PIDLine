@@ -33,7 +33,7 @@ public:
     uint8_t getCmd() const { return m_cmd; }
 
     void write8(const uint8_t& v);
-    void write16(const uint16_t& v);
+    void write16(const int16_t& v);
     void write32(const uint32_t& v);
 
     uint8_t read8();

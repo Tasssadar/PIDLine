@@ -55,7 +55,7 @@ void Packet::write8(const uint8_t& v)
     m_data[m_len++] = v;
 }
 
-void Packet::write16(const uint16_t& v)
+void Packet::write16(const int16_t& v)
 {
     m_data[m_len++] = (v >> 8);
     m_data[m_len++] = (v & 0xFF);

@@ -33,8 +33,8 @@ bool on_line = false;
 uint16_t on_line_counter = 0;
 
 void handlePkt(Packet& pkt);
-void dumpData(const int16_t& P, const int16_t& D, const int32_t& I, const uint16_t& last_P,
-              const int16_t& pwr_diff, const int16_t& l, const int16_t& r);
+void dumpData(int16_t P, int16_t D, int32_t I, uint16_t last_P,
+              int16_t pwr_diff);
 void stopStart();
 
 void run()
@@ -67,11 +67,11 @@ void run()
         }
         else
         {
-            uint16_t pos = getLinePos(&on_line);
+            int16_t pos = getLinePos(&on_line);
 
             if(!on_line)
             {
-                if(++on_line_counter >= 500)
+                if(++on_line_counter >= 400)
                 {
                     rs232.dumpNumber(last_P);
                     rs232.dumpNumber(pos);
@@ -100,7 +100,7 @@ void run()
                 setMotorPower(max_spd+pwr_diff, max_spd);
             else
                 setMotorPower(max_spd, max_spd-pwr_diff);
-            //dumpData(P, D, I, last_P, pwr_diff, l, r);
+            //dumpData(P, D, I, last_P, pwr_diff);
             last_P = P;
         }
     }
@@ -147,8 +147,8 @@ void handlePkt(Packet& pkt)
     }
 }
 
-void dumpData(const int16_t& P, const int16_t& D, const int32_t& I, const uint16_t& last_P,
-              const int16_t& pwr_diff, const int16_t& l, const int16_t& r)
+void dumpData(int16_t P, int16_t D, int32_t I, uint16_t last_P,
+              int16_t pwr_diff)
 {
     Packet pkt(0);
     pkt.write16(P);         // 0
@@ -156,8 +156,6 @@ void dumpData(const int16_t& P, const int16_t& D, const int32_t& I, const uint16
     pkt.write32(I);         // 4
     pkt.write16(last_P);    // 8
     pkt.write16(pwr_diff);  // 10
-    pkt.write16(r);         // 12
-    pkt.write16(l);         // 14
 
     pkt.send();
 }
