@@ -7,6 +7,7 @@ enum opcodes
 {
     SMSG_SET_PID_VALS = 0x01,
     SMSG_START_STOP   = 0x02,
+    SMSG_SET_MOTORS   = 0x04,
 };
 
 class rs232;
