@@ -40,7 +40,6 @@ void stopStart();
 
 void run()
 {
-    setSoftAccel(false);
     display.printNumToXY(getBatteryVoltage(), 4, 0);
 
     char ch;
@@ -129,6 +128,7 @@ void stopStart()
         stopped = true;
         setMotorPower(0, 0);
     }
+    setSoftAccel(stopped);
 }
 
 void handlePkt(Packet& pkt)
@@ -148,6 +148,14 @@ void handlePkt(Packet& pkt)
             d_val1 = pkt.read16();
             d_val2 = pkt.read16();
             max_spd = pkt.read16();
+            break;
+        }
+        case SMSG_SET_MOTORS:
+        {
+            if(!stopped)
+                break;
+            setRightMotor(pkt.read16());
+            setLeftMotor(pkt.read16());
             break;
         }
     }
