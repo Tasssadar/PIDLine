@@ -28,7 +28,7 @@ bool Packet::add(uint8_t ch)
                 return false;
             break;
         case 1:
-            if(ch != 0x00)
+            if(ch != 0x00 && ch != 0x01)
                 return false;
             break;
         case 2:
