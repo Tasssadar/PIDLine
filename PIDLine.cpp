@@ -60,11 +60,21 @@ void run()
 
         if(stopped)
         {
-            if(!isPressed(BUTTON_B))
-                continue;
+            if(isPressed(BUTTON_B))
+            {
+                waitForRelease(BUTTON_B);
+                stopStart();
+            }
 
-            waitForRelease(BUTTON_B);
-            stopStart();
+            if(isPressed(BUTTON_C))
+            {
+                waitForRelease(BUTTON_C);
+
+                delay(500);
+                cal_round();
+                calibrated = true;
+            }
+            continue;
         }
         else
         {
@@ -114,10 +124,10 @@ void stopStart()
 {
     if(stopped)
     {
-        delay(500);
         if(!calibrated)
-            cal_round();
-        calibrated = true;
+            return;
+
+        delay(500);
         stopped = false;
         last_P = 0;
         I = 0;
