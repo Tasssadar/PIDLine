@@ -125,7 +125,10 @@ void stopStart()
     if(stopped)
     {
         if(!calibrated)
+        {
+            buzzer.set(200, 0);
             return;
+        }
 
         delay(500);
         stopped = false;
