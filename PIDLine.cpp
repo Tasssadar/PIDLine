@@ -36,8 +36,8 @@ uint16_t on_line_counter = 0;
 #define POWER_SAFE_SLOW 90
 #define POWER_SAFE_FAST 255
 
-#define POWER_SAFE_FAST_T 10*1000LU
-#define POWER_SAFE_SLOW_T 50*1000LU
+static const uint32_t POWER_SAFE_FAST_T = 20000;
+static const uint32_t POWER_SAFE_SLOW_T = uint32_t(100000);
 
 enum followMode
 {
@@ -60,9 +60,12 @@ void inceraseMode();
 void setModeVals();
 void executeMode();
 void showModeDisplay();
+void loadEEPROM();
+void calibrate();
 
 void run()
 {
+    loadEEPROM();
     display.printNumToXY(getBatteryVoltage(), 4, 0);
     setModeVals();
 
@@ -98,10 +101,8 @@ void run()
              if(isPressed(BUTTON_C))
             {
                 waitForRelease(BUTTON_C);
-
                 delay(300);
-                cal_round();
-                calibrated = true;
+                calibrate();
             }
         }
         else
@@ -163,10 +164,7 @@ void stopStart()
     {
         delay(100);
         if(!calibrated)
-        {
-            cal_round();
-            calibrated = true;
-        }
+            calibrate();
 
         stopped = false;
         last_P = 0;
@@ -180,6 +178,14 @@ void stopStart()
         setMotorPower(0, 0);
     }
     setSoftAccel(stopped);
+}
+
+void calibrate()
+{
+    cal_round();
+    calibrated = true;
+    store_eeprom(1, uint8_t(42));
+    store_sensor_cal(2);
 }
 
 void inceraseMode()
@@ -205,12 +211,14 @@ void setModeVals()
             break;
         case MODE_POWER_SAFE:
             max_spd = POWER_SAFE_FAST;
+            resetTicks();
             break;
         default:
             mode = MODE_FAST;
             setModeVals();
             break;
     }
+    store_eeprom(0, mode);
     showModeDisplay();
 }
 
@@ -304,4 +312,18 @@ void Packet::send()
 
     for(uint8_t i = 0; i < m_len; ++i)
         rs232.sendCharacter(m_data[i]);
+}
+
+void loadEEPROM()
+{
+    mode = load_eeprom<uint8_t>(0);
+    if(mode >= MODE_COUNT)
+        mode = MODE_FAST;
+
+    uint8_t cal = load_eeprom<uint8_t>(1);
+    if(cal == 42)
+    {
+        load_sensor_cal(2);
+        calibrated = true;
+    }
 }
