@@ -1,4 +1,4 @@
-#define PI_LIB_VERSION 20
+#define PI_LIB_VERSION 23
 
 #ifndef PI_LIB_COMMON
 #define PI_LIB_COMMON
@@ -299,6 +299,7 @@ public:
                     m_timer = -1;
                 else
                     m_timer = m_time_off;
+
                 TCCR1A &= ~(1 << COM1B0);
                 OCR1BH = 0;
                 OCR1BL = 0;
@@ -590,6 +591,54 @@ void cal_round()
         delay(20);
     }
     setMotorPower(0, 0);
+}
+
+void store_sensor_cal(uint16_t address)
+{
+    int32_t val = 0;
+    uint8_t bits = 0;
+    for(uint8_t i = 0; i < PI_GRND_SENSOR_COUNT*2;++i)
+    {
+        if(i < PI_GRND_SENSOR_COUNT)
+            val |= ((g_calibratedMinimum[i] & 0x7FF) << bits);
+        else
+            val |= ((g_calibratedMaximum[i-5] & 0x7FF) << bits);
+
+        bits += 11;
+
+        for(uint8_t y = 0; bits >= 8;++y)
+        {
+            store_eeprom(address++, uint8_t(val & 0xFF));
+            val >>= 8;
+            bits -= 8;
+        }
+    }
+
+    if(bits)
+        store_eeprom(address, uint8_t(val));
+}
+
+void load_sensor_cal(uint16_t address)
+{
+    int32_t val = 0;
+    uint8_t bits = 0;
+    for(uint8_t i = 0; i < PI_GRND_SENSOR_COUNT*2;)
+    {
+        val |= (load_eeprom<uint8_t>(address++) << bits);
+        bits += 8;
+
+        while(bits >= 11)
+        {
+            if(i < 5)
+                g_calibratedMinimum[i] = (val & 0x7FF);
+            else
+                g_calibratedMaximum[i-5] = (val & 0x7FF);
+
+            val >>= 11;
+            bits -= 11;
+            ++i;
+        }
+    }
 }
 
 // int PololuQTRSensors::readLine(unsigned int *sensor_values,
