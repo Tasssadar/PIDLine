@@ -647,7 +647,7 @@ int16_t getLinePos(bool *on_line, bool white_line = false)
 
     if(!(*on_line_set))
     {
-        buzzer.set(200, 0);
+        //buzzer.set(200, 0);
         // If it last read to the left of center, return 0.
         if(last_value < (PI_GRND_SENSOR_COUNT-1)*1024/2)
             return 0;
