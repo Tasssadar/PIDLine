@@ -151,10 +151,21 @@ void follow()
         pwr_diff = -max_spd;
 
     if(pwr_diff < 0)
+    {
+        //rs232.dumpNumber(max_spd+pwr_diff);
+        //rs232.dumpNumber(max_spd);
+        //rs232.sendCharacter('\n');
         setMotorPower(max_spd+pwr_diff, max_spd);
+    }
     else
+    {
+        //rs232.dumpNumber(max_spd);
+        //rs232.dumpNumber(max_spd-pwr_diff);
+      //  rs232.sendCharacter('\n');
         setMotorPower(max_spd, max_spd-pwr_diff);
+    }
 
+    //rs232.wait();
     last_P = P;
 }
 
