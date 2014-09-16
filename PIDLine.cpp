@@ -38,7 +38,7 @@ static stopwatch pwr_safe_time(false);
 #define POWER_SAFE_FAST 250
 
 static const uint32_t POWER_SAFE_FAST_T = 20000;
-static const uint32_t POWER_SAFE_SLOW_T = uint32_t(100000);
+static const uint32_t POWER_SAFE_SLOW_T = uint32_t(75000);
 
 enum followMode
 {
