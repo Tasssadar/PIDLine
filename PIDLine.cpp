@@ -32,6 +32,7 @@ static int16_t last_P = 0;
 static int32_t I = 0;
 static bool on_line = false;
 static uint16_t on_line_counter = 0;
+static stopwatch pwr_safe_time(false);
 
 #define POWER_SAFE_SLOW 90
 #define POWER_SAFE_FAST 250
@@ -192,7 +193,7 @@ void stopStart()
         last_P = 0;
         I = 0;
         on_line_counter = 0;
-        resetTicks();
+        pwr_safe_time.restart();
     }
     else
     {
@@ -233,7 +234,7 @@ void setModeVals()
             break;
         case MODE_POWER_SAFE:
             max_spd = POWER_SAFE_FAST;
-            resetTicks();
+            pwr_safe_time.restart();
             break;
         default:
             mode = MODE_FAST;
@@ -267,12 +268,12 @@ void executeMode()
     if(mode != MODE_POWER_SAFE)
         return;
 
-    const uint32_t ticks_cur = getTicksCount();
+    const uint32_t ticks_cur = pwr_safe_time.get();
     if(max_spd == POWER_SAFE_FAST)
     {
         if(ticks_cur >= POWER_SAFE_FAST_T)
         {
-            resetTicks();
+            pwr_safe_time.restart();
             spd_per_hundred_tick = -(POWER_SAFE_SLOW/10);
             max_spd += spd_per_hundred_tick;
         }
@@ -281,7 +282,7 @@ void executeMode()
     {
         if(ticks_cur >= POWER_SAFE_SLOW_T)
         {
-            resetTicks();
+            pwr_safe_time.restart();
             spd_per_hundred_tick = POWER_SAFE_FAST/10;
             max_spd += spd_per_hundred_tick;
         }
@@ -290,7 +291,7 @@ void executeMode()
     {
         if(ticks_cur >= 200)
         {
-            resetTicks();
+            pwr_safe_time.restart();
             max_spd += spd_per_hundred_tick;
             
             if(max_spd < POWER_SAFE_SLOW)
