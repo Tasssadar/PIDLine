@@ -23,7 +23,7 @@ public:
         m_cmd = cmd;
     }
 
-    void clear();
+    void clear(uint8_t cmd = 0);
     bool add(uint8_t ch);
     bool isValid()
     {

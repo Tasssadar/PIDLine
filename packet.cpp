@@ -11,9 +11,9 @@ Packet::Packet(uint8_t cmd)
     m_cmd = cmd;
 }
 
-void Packet::clear()
+void Packet::clear(uint8_t cmd)
 {
-    m_cmd = 0;
+    m_cmd = cmd;
     m_len = 0;
     m_ritr = 0;
     m_recv = 0;
@@ -28,8 +28,8 @@ bool Packet::add(uint8_t ch)
                 return false;
             break;
         case 1:
-            if(ch != 0x00 && ch != 0x01)
-                return false;
+            //if(ch != 0x00 && ch != 0x01)
+            //    return false;
             break;
         case 2:
             m_len = ch;

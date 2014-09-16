@@ -26,15 +26,15 @@ int16_t d_val2 = 1;
 int16_t max_spd = 255;
 #endif
 
-bool stopped = true;
-bool calibrated = false;
-int16_t last_P = 0;
-int32_t I = 0;
-bool on_line = false;
-uint16_t on_line_counter = 0;
+static bool stopped = true;
+static bool calibrated = false;
+static int16_t last_P = 0;
+static int32_t I = 0;
+static bool on_line = false;
+static uint16_t on_line_counter = 0;
 
 #define POWER_SAFE_SLOW 90
-#define POWER_SAFE_FAST 255
+#define POWER_SAFE_FAST 250
 
 static const uint32_t POWER_SAFE_FAST_T = 20000;
 static const uint32_t POWER_SAFE_SLOW_T = uint32_t(100000);
@@ -71,6 +71,7 @@ void run()
 
     char ch;
     Packet pkt;
+    Packet spkt;
 
     while(true)
     {
@@ -109,6 +110,11 @@ void run()
         {
             executeMode();
             follow();
+
+            /*spkt.clear(0x12);
+            for(uint8_t i = 0; i < 5; ++i)
+                spkt.write16(getSensorValue(i));
+            spkt.send();*/
         }
     }
 }
@@ -139,7 +145,12 @@ void follow()
     else
         on_line_counter = 0;
 
-    int16_t P = ((int16_t)pos) - 2048;
+    int16_t coe = 2048;
+    if(pos > 3072)
+        coe = 1024;
+    else if(pos < 1024)
+        coe = 3072;
+    int16_t P = ((int16_t)pos) - coe;
     int16_t D = P - last_P;
     I += P;
 
@@ -247,6 +258,10 @@ void showModeDisplay()
     display.printToXY(modes[mode], 0, 1);
 }
 
+static int16_t spd_per_hundred_tick = 0;
+
+#define TICKS_CHANGE 1000
+
 void executeMode()
 {
     if(mode != MODE_POWER_SAFE)
@@ -258,15 +273,30 @@ void executeMode()
         if(ticks_cur >= POWER_SAFE_FAST_T)
         {
             resetTicks();
-            max_spd = POWER_SAFE_SLOW;
+            spd_per_hundred_tick = -(POWER_SAFE_SLOW/10);
+            max_spd += spd_per_hundred_tick;
         }
     }
-    else
+    else if(max_spd == POWER_SAFE_SLOW)
     {
         if(ticks_cur >= POWER_SAFE_SLOW_T)
         {
             resetTicks();
-            max_spd = POWER_SAFE_FAST;
+            spd_per_hundred_tick = POWER_SAFE_FAST/10;
+            max_spd += spd_per_hundred_tick;
+        }
+    }
+    else
+    {
+        if(ticks_cur >= 200)
+        {
+            resetTicks();
+            max_spd += spd_per_hundred_tick;
+            
+            if(max_spd < POWER_SAFE_SLOW)
+                max_spd = POWER_SAFE_SLOW;
+            else if(max_spd > POWER_SAFE_FAST)
+                max_spd = POWER_SAFE_FAST;
         }
     }
 }
